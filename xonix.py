@@ -19,17 +19,37 @@ class Player(pygame.sprite.Sprite):
         super(Player, self).__init__()
         self.surf = pygame.Surface((10, 10))
         self.surf.fill((255, 255, 0))
-        self.rect = self.surf.get_rect()
+        self.rect = self.surf.get_rect(center=(SCREEN_WIDTH/2, 0))
+        self.speed = 5
+        self.v_dir = 0
+        self.h_dir = 0
+        self.line_coord = []
+        self.movement = False
+        self.direction = ""
 
     def update(self, pressed_keys):
         if pressed_keys[K_UP]:
-            self.rect.move_ip(0, -5)
+            self.v_dir = -1
+            self.h_dir = 0
+            self.movement = True
         if pressed_keys[K_DOWN]:
-            self.rect.move_ip(0, 5)
+            self.v_dir = 1
+            self.h_dir = 0
+            self.movement = True
         if pressed_keys[K_LEFT]:
-            self.rect.move_ip(-5, 0)
+            self.h_dir = -1
+            self.v_dir = 0
+            self.movement = True
         if pressed_keys[K_RIGHT]:
-            self.rect.move_ip(5, 0)
+            self.h_dir = 1
+            self.v_dir = 0
+            self.movement = True
+        if self.movement:
+            self.line_coord.append(self.rect.center)
+            self.rect.move_ip(self.h_dir*self.speed, self.v_dir*self.speed)
+            self.line_coord.append((self.rect.center[0] + self.h_dir*4,
+                                    self.rect.center[1] + self.v_dir*4))            
+            pygame.draw.lines(screen, (255, 0, 0), False, self.line_coord, 9)
 
         if self.rect.left < 0:
             self.rect.left = 0
@@ -49,8 +69,8 @@ class EnemyIn(pygame.sprite.Sprite):
         # The starting position is randomly generated
         self.rect = self.surf.get_rect(
             center=(
-                random.randint(5, SCREEN_WIDTH - 5),
-                random.randint(5, SCREEN_HEIGHT - 5),
+                random.randint(SCREEN_WIDTH*0.05 + 5, SCREEN_WIDTH*0.95 - 5),
+                random.randint(SCREEN_HEIGHT*0.05 + 5, SCREEN_HEIGHT*0.95 - 5),
             )
         )
         pygame.draw.circle(self.surf, (255, 255, 255), (5, 5), 5)
@@ -70,9 +90,11 @@ class EnemyIn(pygame.sprite.Sprite):
 pygame.init()
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption('XONIX')
 all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 player = Player()
+
 all_sprites.add(player)
 ENEMY_NUMBER = 2
 for item in range(ENEMY_NUMBER):
@@ -94,6 +116,7 @@ while running:
     pressed_keys = pygame.key.get_pressed()
     player.update(pressed_keys)
     enemies.update()
+
     for entity in all_sprites:
         screen.blit(entity.surf, entity.rect)
     pygame.display.flip()

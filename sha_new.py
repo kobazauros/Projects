@@ -5,6 +5,7 @@ import math
 
 TEST_MESSAGE = "46546464654654545455fgdfgsfdgfkljj'lklkj'lj'lk'111111111111111"
 
+
 def get_primes(num):
     """
     function getting list of first n primes
@@ -26,17 +27,19 @@ def get_primes(num):
         f_p += 1
     return primes_list
 
-def get_32_bits(value, power = 2):
+
+def get_32_bits(value, power=2):
     """
     get first 32 bits of fractional part of value root
     pow = 2 means square root
     """
     if power < 2:
         print("bad power value")
-    #take a first value in tuple made by math.modf - fractional part
+    # take a first value in tuple made by math.modf - fractional part
     res = math.modf(value**(1/power))[0]
-    res = int(res*(1<<32))
+    res = int(res*(1 << 32))
     return res
+
 
 def split_bytes(byte_input, length):
     """
@@ -44,15 +47,16 @@ def split_bytes(byte_input, length):
     """
     return [byte_input[x:x+length] for x in range(0, len(byte_input), length)]
 
+
 hash_values = []
 round_constants = []
 
 FIRST_8_PRIMES = get_primes(8)
 FIRST_64_PRIMES = get_primes(64)
-#get first 32 bits of fractional part of square roots
+# get first 32 bits of fractional part of square roots
 for i in range(8):
     hash_values.append(get_32_bits(FIRST_8_PRIMES[i], 2))
-#get first 32 bits of fractional part of cubic roots
+# get first 32 bits of fractional part of cubic roots
 for i in range(64):
     round_constants.append(get_32_bits(FIRST_64_PRIMES[i], 3))
 # convert initial message to bytes
@@ -60,11 +64,12 @@ bytes_input = bytes(str(TEST_MESSAGE), "utf8")
 # get length of initial message in 64-bytes big-endian
 len_b = len(bytes_input)*8
 len_bits = len_b.to_bytes(8, 'big')
-#print_bytes(len_bits)
+# print_bytes(len_bits)
 # get zero fill with 1 as a separator
 SEP = 128
-zero_fill = SEP.to_bytes(((len(bytes_input) + 8)//64 + 1)*64 - len(bytes_input) - 8, 'little')
-#print_bytes(zero_fill)
+zero_fill = SEP.to_bytes(((len(bytes_input) + 8)//64 + 1)*64 -
+                         len(bytes_input) - 8, 'little')
+# print_bytes(zero_fill)
 
 padded_message = bytes_input + zero_fill + len_bits
 message_chunks = split_bytes(padded_message, 64)
@@ -78,37 +83,62 @@ h5 = hash_values[5]
 h6 = hash_values[6]
 h7 = hash_values[7]
 
-ROR = lambda x, y: (((x & 0xffffffff) >> (y & 31)) | (x << (32 - (y & 31)))) & 0xffffffff
-Ch = lambda x, y, z: (z ^ (x & (y ^ z)))
-Maj = lambda x, y, z: (((x | y) & z) | (x & y))
-R = lambda x, n: (x & 0xffffffff) >> n
-Sigma0 = lambda x: (ROR(x, 2) ^ ROR(x, 13) ^ ROR(x, 22))
-Sigma1 = lambda x: (ROR(x, 6) ^ ROR(x, 11) ^ ROR(x, 25))
-Gamma0 = lambda x: (ROR(x, 7) ^ ROR(x, 18) ^ R(x, 3))
-Gamma1 = lambda x: (ROR(x, 17) ^ ROR(x, 19) ^ R(x, 10))
+
+def ROR(x, y):
+    return (((x & 0xffffffff) >> (y & 31)) |
+            (x << (32 - (y & 31)))) & 0xffffffff
+
+
+def Ch(x, y, z):
+    return (z ^ (x & (y ^ z)))
+
+
+def Maj(x, y, z):
+    return (((x | y) & z) | (x & y))
+
+
+def R(x, n):
+    return (x & 0xffffffff) >> n
+
+
+def Sigma0(x):
+    return (ROR(x, 2) ^ ROR(x, 13) ^ ROR(x, 22))
+
+
+def Sigma1(x):
+    return (ROR(x, 6) ^ ROR(x, 11) ^ ROR(x, 25))
+
+
+def Gamma0(x):
+    return (ROR(x, 7) ^ ROR(x, 18) ^ R(x, 3))
+
+
+def Gamma1(x):
+    return (ROR(x, 17) ^ ROR(x, 19) ^ R(x, 10))
+
 
 for i in message_chunks:
     ZERO = 0
     zero = ZERO.to_bytes(4, 'big')
     i += zero*48
-    #split each chunk into 4-byte words
+    # split each chunk into 4-byte words
     word = split_bytes(i, 4)
-    for j in range(16,len(word)):
+    for j in range(16, len(word)):
         word_0 = int.from_bytes(word[j-15], "big")
         word_1 = int.from_bytes(word[j-2], "big")
         g0 = Gamma0(word_0)
         g1 = Gamma1(word_1)
-        word[j] = ((int.from_bytes(word[j-16], "big") + \
-                    g0 + \
-                    int.from_bytes(word[j-7], "big") + \
+        word[j] = ((int.from_bytes(word[j-16], "big") +
+                    g0 +
+                    int.from_bytes(word[j-7], "big") +
                     g1) & 0xffffffff).to_bytes(4, 'big')
 
     a, b, c, d, e, f, g, h = h0, h1, h2, h3, h4, h5, h6, h7
 
     for i in range(0, 64):
-        temp0 = (h + Sigma1(e) + Ch(e, f, g) + \
-                round_constants[i] + \
-                int.from_bytes(word[i], "big")) & 0xffffffff
+        temp0 = (h + Sigma1(e) + Ch(e, f, g) +
+                 round_constants[i] +
+                 int.from_bytes(word[i], "big")) & 0xffffffff
         temp1 = (Sigma0(a) + Maj(a, b, c)) & 0xffffffff
         h, g, f = g, f, e
         e = (d + temp0) & 0xffffffff
@@ -132,8 +162,8 @@ result = hex(h0)[2:] + \
         hex(h6)[2:] + \
         hex(h7)[2:]
 
-
 try:
-    assert result == "28e30cd2269981f9b2825756b5423e572710a9ed7146b6e2271e8e40ee69b31f"
+    assert result == \
+        "28e30cd2269981f9b2825756b5423e572710a9ed7146b6e2271e8e40ee69b31f"
 except AssertionError:
     print("value mismatch")

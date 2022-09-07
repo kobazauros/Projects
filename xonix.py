@@ -48,14 +48,13 @@ class Player(pygame.sprite.Sprite):
             if (self.rect.center[0] - self.h_dir*4, self.rect.center[1] - self.v_dir*4) not in self.line_coord:
                 self.line_coord.append((self.rect.center[0] - self.h_dir*4,
                                         self.rect.center[1] - self.v_dir*4))
-            
 
             self.rect.move_ip(self.h_dir*self.speed, self.v_dir*self.speed)
 
             if self.rect.center not in self.line_coord:
                 print(self.rect.center)
                 self.line_coord.append(self.rect.center)
-            
+
             pygame.draw.lines(screen, (255, 0, 0), False, self.line_coord, 10)
         if self.rect.left < 0:
             self.rect.left = 0

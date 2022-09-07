@@ -1,5 +1,12 @@
-import pygame, sys
-from pygame.locals import *
+import pygame
+import sys
+from pygame.locals import (
+    QUIT,
+    MOUSEBUTTONUP,
+    MOUSEMOTION,
+    MOUSEBUTTONDOWN,
+)
+
 
 def main():
     pygame.init()
@@ -24,7 +31,8 @@ def main():
                 if (drawing):
                     mouse_position = pygame.mouse.get_pos()
                     if last_pos is not None:
-                        pygame.draw.line(screen, BLACK, last_pos, mouse_position, 1)
+                        pygame.draw.line(
+                            screen, BLACK, last_pos, mouse_position, 1)
                     last_pos = mouse_position
             elif event.type == MOUSEBUTTONUP:
                 mouse_position = (0, 0)
@@ -33,6 +41,7 @@ def main():
                 drawing = True
 
         pygame.display.update()
+
 
 if __name__ == "__main__":
     main()

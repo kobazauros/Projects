@@ -25,7 +25,7 @@ class Player(pygame.sprite.Sprite):
         self.h_dir = 0
         self.line_coord = []
         self.movement = False
-        self.direction = ""
+        self.dist = 0
 
     def update(self, pressed_keys):
         if pressed_keys[K_UP]:
@@ -45,12 +45,20 @@ class Player(pygame.sprite.Sprite):
             self.v_dir = 0
             self.movement = True
         if self.movement:
-            self.line_coord.append(self.rect.center)
-            self.rect.move_ip(self.h_dir*self.speed, self.v_dir*self.speed)
-            self.line_coord.append((self.rect.center[0] + self.h_dir*4,
-                                    self.rect.center[1] + self.v_dir*4))            
-            pygame.draw.lines(screen, (255, 0, 0), False, self.line_coord, 9)
+            if (self.rect.center[0] - self.h_dir*4, self.rect.center[1] - self.v_dir*4) not in self.line_coord:
+                self.line_coord.append((self.rect.center[0] - self.h_dir*4,
+                                        self.rect.center[1] - self.v_dir*4))
+            else:
+                self.movement = False
 
+            self.rect.move_ip(self.h_dir*self.speed, self.v_dir*self.speed)
+
+            if self.rect.center not in self.line_coord:
+                print(self.rect.center)
+                self.line_coord.append(self.rect.center)
+            else:
+                self.movement = False
+            pygame.draw.lines(screen, (255, 0, 0), False, self.line_coord, 10)
         if self.rect.left < 0:
             self.rect.left = 0
         elif self.rect.right > SCREEN_WIDTH:
@@ -116,9 +124,16 @@ while running:
     pressed_keys = pygame.key.get_pressed()
     player.update(pressed_keys)
     enemies.update()
-
     for entity in all_sprites:
         screen.blit(entity.surf, entity.rect)
+    if pygame.sprite.spritecollideany(player, enemies):
+        player.kill()
+        running = False
+    for entity in all_sprites:
+        for point in player.line_coord[:-5]:
+            if entity.rect.collidepoint(point):
+                player.kill()
+                running = False
     pygame.display.flip()
     clock.tick(30)
 pygame.quit()
